@@ -1,10 +1,17 @@
 package chattcp;
 
 import static com.sun.media.jfxmediaimpl.MediaUtils.error;
+import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+import static java.lang.System.in;
 import java.net.Socket;
 import java.time.LocalDate;
 import java.util.logging.Level;
@@ -23,8 +30,13 @@ public class Chat extends javax.swing.JFrame {
     private Socket socket;
     private DataOutputStream saida;
     private DataInputStream entrada;
+    private ObjectOutputStream objectOutput;
+    private ObjectInputStream objectInput;
+    private FileOutputStream fileOutput;
+    private BufferedInputStream fileInput;
     private String mensagem = "";
     private String type = "";
+       
     
     public Chat(){
         initComponents();
@@ -32,13 +44,15 @@ public class Chat extends javax.swing.JFrame {
     
     public Chat(Socket socket, String type) {
         initComponents();
+
         jLabelType.setText(type);
         this.type = type;
         try{
             this.socket = socket;
             saida = new DataOutputStream(this.socket.getOutputStream());
             entrada = new DataInputStream(this.socket.getInputStream());
-
+            objectOutput = new ObjectOutputStream(this.socket.getOutputStream());
+            objectInput = new ObjectInputStream(this.socket.getInputStream());
             new Thread(){
                 public void run() {
                     try {
@@ -50,7 +64,31 @@ public class Chat extends javax.swing.JFrame {
                         System.out.println("Erro ao enviar/receber stream "+ ex.getMessage());
                     }
                 }
-            }.start(); 
+            }.start();
+            new Thread() {
+                int bytesRead;
+                int current = 0;
+                public void run() {
+                    try {
+                        while(true){
+                            String fileName = entrada.readUTF();
+                            System.out.println(fileName);
+                            OutputStream output = new FileOutputStream(fileName);
+                            long size = entrada.readLong();
+                            byte[] buffer = new byte[1024];   
+                            while (size > 0 && (bytesRead = entrada.read(buffer, 0, (int)Math.min(buffer.length, size))) != -1)   
+                            {   
+                                output.write(buffer, 0, bytesRead);   
+                                size -= bytesRead;   
+                            }
+                            System.out.println("RECEBIDO");
+                            output.close();
+                        }
+                    } catch (IOException ex){
+                        System.out.println("Erro ao enviar/receber arquivo "+ ex.getMessage());
+                    }
+                }
+            }.start();
         } catch(IOException error){
             System.out.println("Erro ao enviar/receber stream "+ error.getMessage());
         }
@@ -195,7 +233,14 @@ public class Chat extends javax.swing.JFrame {
             File arquivo = file.getSelectedFile();
             System.out.println("Enviado");
             try {
-                FileManager.splitFile(arquivo.getAbsolutePath(),1);
+                byte[] mybytearray = new byte[(int) arquivo.length()];
+                FileInputStream fis = new FileInputStream(arquivo);
+                BufferedInputStream bis = new BufferedInputStream(fis);
+                bis.read(mybytearray, 0, mybytearray.length);
+                saida.writeUTF(arquivo.getName());     
+                saida.writeLong(mybytearray.length);     
+                saida.write(mybytearray, 0, mybytearray.length);     
+                saida.flush();
             } catch (IOException ex) {
                 Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
             }
