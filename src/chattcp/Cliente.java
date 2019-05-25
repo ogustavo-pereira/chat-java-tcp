@@ -16,8 +16,11 @@ import java.util.logging.Logger;
 public class Cliente {
     public static void main(String[] args) {
         try {
-            Socket socket = new Socket("127.0.0.1",1500);
-            Chat frame = new Chat(socket,"Cliente");
+            Socket socketChat = new Socket("127.0.0.1",1500);
+            Socket socketAnexo = new Socket("127.0.0.1",1600);
+            Chat frame = new Chat(socketChat,socketAnexo,"Cliente");
+            
+            
             frame.setVisible(true);
         } catch (IOException ex) {
             Logger.getLogger(Cliente.class.getName()).log(Level.SEVERE, null, ex);

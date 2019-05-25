@@ -13,10 +13,12 @@ import java.net.Socket;
 public class Servidor {
     public static void main(String[] args) {
         try {
-            ServerSocket server = new ServerSocket(1500);
+            ServerSocket serverChat = new ServerSocket(1500);
+            ServerSocket serverAnexo = new ServerSocket(1600);
             while(true){
-                Socket socket = server.accept();
-                Chat frame = new Chat(socket,"Servidor");
+                Socket socketChat = serverChat.accept();
+                Socket socketAnexo = serverAnexo.accept();
+                Chat frame = new Chat(socketChat,socketAnexo,"Servidor");
                 frame.setVisible(true);
             }
         } catch (IOException ex) {

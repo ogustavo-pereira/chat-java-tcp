@@ -1,6 +1,5 @@
 package chattcp;
 
-import static com.sun.media.jfxmediaimpl.MediaUtils.error;
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -17,6 +16,7 @@ import java.time.LocalDate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JFileChooser;
+import javax.swing.JOptionPane;
 
 /**
  *
@@ -27,9 +27,12 @@ public class Chat extends javax.swing.JFrame {
     /**
      * Creates new form ChatServidor
      */
-    private Socket socket;
+    private Socket socketChat;
+    private Socket socketAnexo;
     private DataOutputStream saida;
     private DataInputStream entrada;
+    private DataOutputStream saidaAnexo;
+    private DataInputStream entradaAnexo;
     private ObjectOutputStream objectOutput;
     private ObjectInputStream objectInput;
     private FileOutputStream fileOutput;
@@ -42,17 +45,20 @@ public class Chat extends javax.swing.JFrame {
         initComponents();
     }
     
-    public Chat(Socket socket, String type) {
+    public Chat(Socket socketChat,Socket socketAnexo, String type) {
         initComponents();
 
         jLabelType.setText(type);
         this.type = type;
         try{
-            this.socket = socket;
-            saida = new DataOutputStream(this.socket.getOutputStream());
-            entrada = new DataInputStream(this.socket.getInputStream());
-            objectOutput = new ObjectOutputStream(this.socket.getOutputStream());
-            objectInput = new ObjectInputStream(this.socket.getInputStream());
+            this.socketChat = socketChat;
+            this.socketAnexo = socketAnexo;
+            saida = new DataOutputStream(this.socketChat.getOutputStream());
+            entrada = new DataInputStream(this.socketChat.getInputStream());
+            saidaAnexo = new DataOutputStream((this.socketAnexo.getOutputStream()));
+            entradaAnexo = new DataInputStream((this.socketAnexo.getInputStream()));
+            objectOutput = new ObjectOutputStream(this.socketAnexo.getOutputStream());
+            objectInput = new ObjectInputStream(this.socketAnexo.getInputStream());
             new Thread(){
                 public void run() {
                     try {
@@ -71,16 +77,17 @@ public class Chat extends javax.swing.JFrame {
                 public void run() {
                     try {
                         while(true){
-                            String fileName = entrada.readUTF();
+                            String fileName = entradaAnexo.readUTF();
                             System.out.println(fileName);
-                            OutputStream output = new FileOutputStream(fileName);
-                            long size = entrada.readLong();
+                            OutputStream output = new FileOutputStream("anexos/"+fileName);
+                            long size = entradaAnexo.readLong();
                             byte[] buffer = new byte[1024];   
-                            while (size > 0 && (bytesRead = entrada.read(buffer, 0, (int)Math.min(buffer.length, size))) != -1)   
+                            while (size > 0 && (bytesRead = entradaAnexo.read(buffer, 0, (int)Math.min(buffer.length, size))) != -1)   
                             {   
                                 output.write(buffer, 0, bytesRead);   
                                 size -= bytesRead;   
                             }
+                            JOptionPane.showMessageDialog(null,"Voce recebeu um novo arquivo arquivo");
                             System.out.println("RECEBIDO");
                             output.close();
                         }
@@ -237,10 +244,10 @@ public class Chat extends javax.swing.JFrame {
                 FileInputStream fis = new FileInputStream(arquivo);
                 BufferedInputStream bis = new BufferedInputStream(fis);
                 bis.read(mybytearray, 0, mybytearray.length);
-                saida.writeUTF(arquivo.getName());     
-                saida.writeLong(mybytearray.length);     
-                saida.write(mybytearray, 0, mybytearray.length);     
-                saida.flush();
+                saidaAnexo.writeUTF(arquivo.getName());     
+                saidaAnexo.writeLong(mybytearray.length);     
+                saidaAnexo.write(mybytearray, 0, mybytearray.length);     
+                saidaAnexo.flush();
             } catch (IOException ex) {
                 Logger.getLogger(Chat.class.getName()).log(Level.SEVERE, null, ex);
             }
