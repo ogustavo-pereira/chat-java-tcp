@@ -23,7 +23,7 @@ import java.util.UUID;
 
 /**
  *
- * @author aluno
+ * @author gustavo
  */
 public class FileManager {
     
